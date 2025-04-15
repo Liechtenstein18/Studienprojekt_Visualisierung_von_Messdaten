@@ -1,11 +1,49 @@
+// -*- Load LabJack U12 Custom DLL -*-
+//ilib_for_link(["cab", "cao"], "mile11.c", [], "c");
+//exec('loader.sce');
+
+//für den start der Messung
+//function startProcess()
+//    
+//endfunction
+
+function toggleGraph(tagName, visible)
+    e = findobj("tag", tagName);
+    if visible then
+        e.visible = "on";
+    else
+        e.visible = "off";
+    end
+endfunction
+
+function export()
+    global export_format_dropdown;
+
+    //auslesen aus dem Drop Down Menu
+    options = ["png", "pdf", "svg"];
+    selected_idx = export_format_dropdown.value;
+    selected_format = options(selected_idx);
+    
+    select selected_format
+        case "png"
+            xs2png(gcf(),'untitled.png');
+        case "pdf"
+            xs2pdf(gcf(),'untitled');
+        case "svg"
+            xs2svg(gcf(),'untitled.svg');
+        else
+            disp("Unknown format selected");
+    end
+    
+endfunction
 // --- Fenster & Grundstruktur ---
 f = figure("position", [100 100 1000 800]);
-f.menubar_visible = "off";
-f.toolbar_visible = "off";
+f.menubar_visible = "on";
+f.toolbar_visible = "on";
 f.resize = "off";
 
-frame1 = uicontrol(f, "style", "frame", "position", [0 0 1000 200], "backgroundcolor", [1 0 1]);
-frame2 = uicontrol(f, "style", "frame", "position", [0 0 1000 600], "backgroundcolor", [0.5 0.5 0.5]);
+//frame1 = uicontrol(f, "style", "frame", "position", [0 0 1000 200], "backgroundcolor", [1 0 1]);
+//frame2 = uicontrol(f, "style", "frame", "position", [0 0 1000 600], "backgroundcolor", [0.5 0.5 0.5]);
 
 // --- GUI-Komponenten global machen ---
 global dauer_input abtastrate_input;
@@ -57,6 +95,71 @@ uicontrol(f, "style", "text", "string", "t", "position", [280 770 80 20], "backg
 uicontrol(f, "style", "text", "string", "A1", "position", [400 770 80 20], "backgroundcolor", [0.8 0.8 0.8], "horizontalalignment", "left");
 uicontrol(f, "style", "text", "string", "A2", "position", [520 770 80 20], "backgroundcolor", [0.8 0.8 0.8], "horizontalalignment", "left");
 
+uicontrol(f, "style", "pushbutton", "string", "Messung starten", "position", [40 700 150 30], ...
+    "callback", "startProcess()");
+
+//checkboxes für das auswählen der plots
+cb1 = uicontrol("style", "checkbox", "parent", f, "string", "Input 1", "value", 1, ...
+    "position", [820 500 140 20], "callback", strcat(["toggleGraph(""minuteVoltage1"", gcbo.value)"]));
+cb2 = uicontrol("style", "checkbox", "parent", f, "string", "Input 2", "value", 1, ...
+    "position", [820 460 140 20], "callback", strcat(["toggleGraph(""minuteVoltage2"", gcbo.value)"]));
+cb3 = uicontrol("style", "checkbox", "parent", f, "string", "Input 3", "value", 1, ...
+    "position", [820 420 140 20], "callback", strcat(["toggleGraph(""minuteVoltage3"", gcbo.value)"]));
+cb4 = uicontrol("style", "checkbox", "parent", f, "string", "Input 4", "value", 1, ...
+    "position", [820 380 140 20], "callback", strcat(["toggleGraph(""minuteVoltage4"", gcbo.value)"]));
+
+//drop down for the export button
+global export_format_dropdown;
+export_format_dropdown = uicontrol(f, "style", "popupmenu", ...
+    "string", ["png"; "pdf"; "svg"], ...
+    "position", [750 40 100 20]);
+//export button
+uicontrol(f, "style", "pushbutton", "string", "Export", "position", [860 40 100 20], ...
+  "callback", "export()");    
+    
+ax = newaxes();
+ax.axes_bounds = [-0.075, 0.20, 1, 0.75]; // Fill frame2 (which is lower 600px of 800px)
+minVoltageDisplay = 0;
+maxVoltageDisplay = 10;
+timeBuffer = 80;
+
+plot(0:timeBuffer, zeros(1, timeBuffer + 1));
+e1 = gce().children(1);
+e1.tag = "minuteVoltage1";
+e1.foreground = color("black");
+e1.visible = "on";
+e1.thickness = 2;
+
+plot(0:timeBuffer, zeros(1, timeBuffer + 1));
+e2 = gce().children(1);
+e2.tag = "minuteVoltage2";
+e2.foreground = color("green");
+e2.visible = "on";
+e2.thickness = 2;
+
+
+plot(0:timeBuffer, zeros(1, timeBuffer + 1));
+e3 = gce().children(1);
+e3.tag = "minuteVoltage3";
+e3.foreground = color("blue");
+e3.visible = "on";
+e3.thickness = 2;
+
+
+plot(0:timeBuffer, zeros(1, timeBuffer + 1));
+e4 = gce().children(1);
+e4.tag = "minuteVoltage4";
+e4.foreground = color("red");
+e4.visible = "on";
+e4.thickness = 2;
+
+
+gca().title.text = "Spannungsverlauf";
+gca().data_bounds = [0, minVoltageDisplay; timeBuffer, maxVoltageDisplay];
+
+// Sekunden-Counter
+global sec;
+sec = 1;
 
 // --- Funktion zum Hinzufügen eines Checkpoints ---
 function add_checkpoint()
@@ -142,3 +245,4 @@ function replace_checkpoint()
         a2_box.string = string(a2_list);
     end
 endfunction
+
