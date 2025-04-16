@@ -20,7 +20,7 @@ function export()
     global export_format_dropdown;
 
     //auslesen aus dem Drop Down Menu
-    options = ["png", "pdf", "svg"];
+    options = ["png", "pdf", "svg", "emf", "eps"];
     selected_idx = export_format_dropdown.value;
     selected_format = options(selected_idx);
     
@@ -31,13 +31,17 @@ function export()
             xs2pdf(gcf(),'untitled');
         case "svg"
             xs2svg(gcf(),'untitled.svg');
+        case "emf"
+            xs2emf(gcf(), 'untitled.emf'); 
+        case "eps"
+            xs2eps(gcf(), 'untitled.eps');
         else
             disp("Unknown format selected");
     end
     
 endfunction
 // --- Fenster & Grundstruktur ---
-f = figure("position", [100 100 1000 800]);
+f = figure("position", [100 100 1000 830]);
 f.menubar_visible = "on";
 f.toolbar_visible = "on";
 f.resize = "off";
@@ -109,14 +113,14 @@ cb4 = uicontrol("style", "checkbox", "parent", f, "string", "Input 4", "value", 
 //drop down for the export button
 global export_format_dropdown;
 export_format_dropdown = uicontrol(f, "style", "popupmenu", ...
-    "string", ["png"; "pdf"; "svg"], ...
-    "position", [750 40 100 20]);
+    "string", ["png"; "pdf"; "svg"; "emf"; "eps"], ...
+    "position", [750 30 100 20]);
 //export button
-uicontrol(f, "style", "pushbutton", "string", "Export", "position", [860 40 100 20], ...
+uicontrol(f, "style", "pushbutton", "string", "Export", "position", [860 30 100 20], ...
   "callback", "export()");    
     
 ax = newaxes();
-ax.axes_bounds = [-0.075, 0.20, 1, 0.75]; // Fill frame2 (which is lower 600px of 800px)
+ax.axes_bounds = [-0.075, 0.25, 1, 0.75]; // Fill frame2 (which is lower 600px of 800px)
 minVoltageDisplay = 0;
 maxVoltageDisplay = 10;
 timeBuffer = 80;
@@ -155,6 +159,9 @@ e4.thickness = 2;
 gca().title.text = "Spannungsverlauf";
 gca().data_bounds = [0, minVoltageDisplay; timeBuffer, maxVoltageDisplay];
 
+xlabel("Zeit (s)");
+ylabel("Spannung (V)");
+
 // Sekunden-Counter
 global sec;
 sec = 1;
@@ -181,8 +188,6 @@ e1.thickness = 2;
 
 gca().title.text = "Eingabe Funktion";
 gca().data_bounds = [0, minVoltageDisplay; dauer_val, maxVoltageDisplay];
-
-
 
 // --- Funktion zum Hinzufügen eines Checkpoints ---
 function add_checkpoint()
