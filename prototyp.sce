@@ -10,6 +10,7 @@ function startProcess()
     global abtastrate;
     //falls in der Zeit der Messung jemand auf die Idee kommen sollte die Dauer der Messung zu verändern
     local_dauer_val = dauer_val;
+    local_abtastrate = abtastrate;
 
     stop = 0;
 
@@ -38,8 +39,8 @@ function startProcess()
         e4.data(sec, 2) = voltage4;
 
         //berechne neuer Zeitpunkt 
-        sleep(abtastrate * 1000);
-        sec = sec + abtastrate;
+        sleep(local_abtastrate * 1000);
+        sec = sec + local_abtastrate;
 
         if stop == 1 then
             break
