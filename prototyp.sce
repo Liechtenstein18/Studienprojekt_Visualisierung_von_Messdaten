@@ -7,6 +7,7 @@ function startProcess()
     global sec;
     global stop;
     global dauer_val;
+    global abtastrate;
     //falls in der Zeit der Messung jemand auf die Idee kommen sollte die Dauer der Messung zu verändern
     local_dauer_val = dauer_val;
 
@@ -36,8 +37,9 @@ function startProcess()
         voltage4 = call("cab", channel4, 1, "i", inputValue2, 2, "i", "out", [1,1], 3, "r");
         e4.data(sec, 2) = voltage4;
 
-        sleep(1000);
-        sec = sec + 1;
+        //berechne neuer Zeitpunkt 
+        sleep(abtastrate * 1000);
+        sec = sec + abtastrate;
 
         if stop == 1 then
             break
@@ -86,7 +88,7 @@ f.resize = "off";
 
 
 // --- GUI-Komponenten global machen ---
-global dauer_input abtastrate_input dauer_val;
+global dauer_input abtastrate_input dauer_val abtastrate;
 global t_input a1_input a2_input;
 global t_box a1_box a2_box;
 
@@ -99,6 +101,7 @@ uicontrol(f, "style", "text", "string", " s", "position", [130 760 20 20], "back
 
 uicontrol(f, "style", "text", "string", " Abtastrate:", "position", [20 740 100 20], "backgroundcolor", [1 1 1], "horizontalalignment", "left");
 abtastrate_input = uicontrol(f, "style", "edit", "string", "10", "position", [80 740 50 20]);
+abtastrate = 1 / evstr(abtastrate_input.string); // umformen der Abtastrate in 1/s
 uicontrol(f, "style", "text", "string", " 1/s", "position", [130 740 20 20], "backgroundcolor", [1 1 1]);
 
 // --- Globale Daten-Arrays ---
