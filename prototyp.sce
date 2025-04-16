@@ -3,9 +3,47 @@
 //exec('loader.sce');
 
 //für den start der Messung
-//function startProcess()
-//    
-//endfunction
+function startProcess()
+    global sec;
+    global stop;
+    global dauer_val;
+    //falls in der Zeit der Messung jemand auf die Idee kommen sollte die Dauer der Messung zu verändern
+    local_dauer_val = dauer_val;
+
+    stop = 0;
+
+    e = findobj("tag", "minuteVoltage1");
+    e2 = findobj("tag", "minuteVoltage2");
+    e3 = findobj("tag", "minuteVoltage3");
+    e4 = findobj("tag", "minuteVoltage4");
+
+    channel1 = 0;
+    channel2 = 2;
+    channel3 = 4;
+    channel4 = 6;
+    inputValue2 = 10;
+
+    while sec <= dauer_val
+        voltage1 = call("cab", channel1, 1, "i", inputValue2, 2, "i", "out", [1,1], 3, "r");
+        e.data(sec, 2) = voltage1;
+
+        voltage2 = call("cab", channel2, 1, "i", inputValue2, 2, "i", "out", [1,1], 3, "r");
+        e2.data(sec, 2) = voltage2;
+
+        voltage3 = call("cab", channel3, 1, "i", inputValue2, 2, "i", "out", [1,1], 3, "r");
+        e3.data(sec, 2) = voltage3;
+
+        voltage4 = call("cab", channel4, 1, "i", inputValue2, 2, "i", "out", [1,1], 3, "r");
+        e4.data(sec, 2) = voltage4;
+
+        sleep(1000);
+        sec = sec + 1;
+
+        if stop == 1 then
+            break
+        end
+    end
+endfunction
 
 function toggleGraph(tagName, visible)
     e = findobj("tag", tagName);
@@ -46,11 +84,9 @@ f.menubar_visible = "on";
 f.toolbar_visible = "on";
 f.resize = "off";
 
-//frame1 = uicontrol(f, "style", "frame", "position", [0 0 1000 200], "backgroundcolor", [1 0 1]);
-//frame2 = uicontrol(f, "style", "frame", "position", [0 0 1000 600], "backgroundcolor", [0.5 0.5 0.5]);
 
 // --- GUI-Komponenten global machen ---
-global dauer_input abtastrate_input;
+global dauer_input abtastrate_input dauer_val;
 global t_input a1_input a2_input;
 global t_box a1_box a2_box;
 
@@ -96,9 +132,12 @@ uicontrol(f, "style", "pushbutton", "string", "Hinzufügen", "position", [280 75
 uicontrol(f, "style", "pushbutton", "string", "Entfernen", "position", [280 710 100 30], "callback", "remove_checkpoint()");
 uicontrol(f, "style", "pushbutton", "string", "Ersetzen", "position", [280 670 100 30], "callback", "replace_checkpoint()");
 
-// --- Messung Starten --- noch nicht implementiert ---
+// --- Messung Starten
 uicontrol(f, "style", "pushbutton", "string", "Messung starten", "position", [20 700 130 30], ...
     "callback", "startProcess()");
+// --- Messung Stoppen
+uicontrol(f, "style", "pushbutton", "string", "Messung stopen", "position", [20 600 130 30], ...
+    "callback", "setStop()");
 
 //checkboxes für das auswählen der plots
 cb1 = uicontrol("style", "checkbox", "parent", f, "string", "Input 1", "value", 1, ...
@@ -166,6 +205,8 @@ ylabel("Spannung (V)");
 global sec;
 sec = 1;
 
+global stop;
+stop = 1; //0 = false , 1 = true
 
 // Zweites Diagramm, für Eingabe Funtkion 
 bax = newaxes();
@@ -361,3 +402,9 @@ function update_input_plot()
     a2_plot = findobj("tag", "A2");
     a2_plot.data = [t' y2'];
 endfunction
+
+function setStop() 
+    global stop;
+    stop = 1;
+endfunction
+
