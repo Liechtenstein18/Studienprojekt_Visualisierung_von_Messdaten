@@ -4,13 +4,17 @@
 
 //für den start der Messung
 function startProcess()
+    
     global sec;
     global stop;
     global dauer_val;
     global abtastrate;
+    global neue_dauer
     //falls in der Zeit der Messung jemand auf die Idee kommen sollte die Dauer der Messung zu verändern
-    local_dauer_val = dauer_val;
+    
+    local_dauer_val = neue_dauer;
     local_abtastrate = abtastrate;
+    disp(local_dauer_val);
 
     stop = 0;
 
@@ -25,7 +29,16 @@ function startProcess()
     channel4 = 6;
     inputValue2 = 10;
 
-    while sec <= dauer_val
+    while sec <= local_dauer_val
+        
+        if stop == 1 then
+            disp("Messung gestoppt.");
+            break
+        end
+
+        setOutputFunction(sec);
+        disp(sec);
+        /*
         voltage1 = call("cab", channel1, 1, "i", inputValue2, 2, "i", "out", [1,1], 3, "r");
         e.data(sec, 2) = voltage1;
 
@@ -37,14 +50,13 @@ function startProcess()
 
         voltage4 = call("cab", channel4, 1, "i", inputValue2, 2, "i", "out", [1,1], 3, "r");
         e4.data(sec, 2) = voltage4;
-
+        */
+        
         //berechne neuer Zeitpunkt 
         sleep(local_abtastrate * 1000);
         sec = sec + local_abtastrate;
 
-        if stop == 1 then
-            break
-        end
+        
     end
 endfunction
 
@@ -96,7 +108,7 @@ global t_box a1_box a2_box;
 // --- Beschriftungen & Eingaben oben ---
 uicontrol(f, "style", "text", "string", " Messparameter", "position", [20 780 150 20], "backgroundcolor", [0.8 0.8 0.8], "horizontalalignment", "left");
 uicontrol(f, "style", "text", "string", " Messdauer:", "position", [20 760 100 20], "backgroundcolor", [1 1 1], "horizontalalignment", "left");
-dauer_input = uicontrol(f, "style", "edit", "string", "80", "position", [80 760 50 20], "callback", "updateInputFunction()");
+dauer_input = uicontrol(f, "style", "edit", "string", "15", "position", [80 760 50 20], "callback", "updateInputFunction()");
 dauer_val = evstr(dauer_input.string); // Wandelt z. B. "80" → 80 (Double)
 uicontrol(f, "style", "text", "string", " s", "position", [130 760 20 20], "backgroundcolor", [1 1 1]);
 
@@ -140,8 +152,7 @@ uicontrol(f, "style", "pushbutton", "string", "Ersetzen", "position", [280 670 1
 uicontrol(f, "style", "pushbutton", "string", "Messung starten", "position", [20 700 130 30], ...
     "callback", "startProcess()");
 // --- Messung Stoppen
-uicontrol(f, "style", "pushbutton", "string", "Messung stopen", "position", [20 600 130 30], ...
-    "callback", "setStop()");
+uicontrol(f, "style", "pushbutton", "string", "Messung stopen", "position", [20 600 130 30], "callback", "setStop()");
 
 //checkboxes für das auswählen der plots
 cb1 = uicontrol("style", "checkbox", "parent", f, "string", "Input 1", "value", 1, ...
@@ -235,6 +246,7 @@ gca().title.text = "Eingabe Funktion";
 gca().data_bounds = [0, minVoltageDisplay; dauer_val, maxVoltageDisplay];
 
 // --- Funktion zum Hinzufügen eines Checkpoints ---
+// --- Funktion zum Hinzufügen eines Checkpoints ---
 function add_checkpoint()
     // Zugriff auf globale Variablen & GUI-Objekte
     global t_list a1_list a2_list;
@@ -242,14 +254,29 @@ function add_checkpoint()
     global t_box a1_box a2_box;
 
     // Eingaben auslesen und in Zahlen umwandeln
+    
     t_val  = evstr(t_input.string);
     a1_val = evstr(a1_input.string);
     a2_val = evstr(a2_input.string);
 
-    // Werte zur Liste hinzufügen
-    t_list($+1)  = t_val;
-    a1_list($+1) = a1_val;
-    a2_list($+1) = a2_val;
+    // Werte zur Liste hinzufügen, wenn die angebene dauer> Messdauer, dann nimmt er einfach die Messdauer.
+    if t_val < dauer_val then
+        t_list($+1)  = t_val;
+    else   
+        t_list($+1)  = dauer_val; 
+    end    
+
+    if a1_val < 10 then   
+        a1_list($+1) = a1_val;
+    else
+        a1_list($+1) = 10;
+    end
+
+    if a2_val < 10 then   
+        a2_list($+1) = a2_val;
+    else
+        a2_list($+1) = 10;
+    end
 
     // Listboxen aktualisieren
     t_box.string  = string(t_list);
@@ -326,10 +353,11 @@ endfunction
 
 function updateInputFunction()
     global dauer_input;
+    global neue_dauer;
 
     // Neue Dauer auslesen
     neue_dauer = evstr(dauer_input.string);
-
+    
     // Zweite Achse aktivieren
     f = gcf();
     a = findobj("tag", "EingabeAchse");
@@ -410,5 +438,42 @@ endfunction
 function setStop() 
     global stop;
     stop = 1;
+    disp("Messung gestoppt.");
+    //ausgänge auf 0 setzen
+    //call("cao", 0, 0, "i", 1, "r");
+    //call("cao", 1, 0, "i", 1, "r");
+endfunction
+
+function setOutputFunction(sec)
+    global t_list a1_list a2_list;
+
+    // Standardwerte
+    output_A1 = 0;
+    output_A2 = 0;
+
+    // Falls keine Checkpoints vorhanden sind
+    if size(t_list, "*") == 0 then
+        return;
+    end
+
+    // Sortieren zur Sicherheit (falls neu hinzugefügt wurde)
+    [t_sorted, sort_idx] = gsort(t_list, "g", "i");
+    a1_sorted = a1_list(sort_idx);
+    a2_sorted = a2_list(sort_idx);
+
+    // Finde den letzten gültigen Index für die aktuelle Zeit
+    idx = find(t_sorted <= sec);
+    if ~isempty(idx) then
+        last_idx = idx($);
+        output_A1 = a1_sorted(last_idx);
+        output_A2 = a2_sorted(last_idx);
+    end
+
+    // Ausgabe zur Kontrolle
+    mprintf("t = %.2f s | AO1 = %.2f V | AO2 = %.2f V\n", sec, output_A1, output_A2);
+
+    // Falls LabJack verfügbar: diese Zeilen aktivieren
+    // call("cao", 0, output_A1, "i", 1, "r"); // AO1
+    // call("cao", 1, output_A2, "i", 1, "r"); // AO2
 endfunction
 
