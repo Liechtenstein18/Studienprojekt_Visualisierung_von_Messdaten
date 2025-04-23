@@ -1,6 +1,9 @@
 // -*- Load LabJack U12 Custom DLL -*-
-//ilib_for_link(["cab", "cao"], "mile11.c", [], "c");
-//exec('loader.sce');
+ilib_for_link(["cab", "cao"], "mile11.c", [], "c");
+exec('loader.sce');
+
+disp("analog outputs auf 0 setzen");
+call("cao", 2.5, 1, "r", 2.5 , 2, "r", "out", [1,1], 3, "i");
 
 //für den start der Messung
 function startProcess()
@@ -9,9 +12,11 @@ function startProcess()
     global stop;
     global dauer_val;
     global abtastrate;
-    global neue_dauer
+    global neue_dauer;
+
+    // Neue Dauer auslesen
+    neue_dauer = evstr(dauer_input.string);
     //falls in der Zeit der Messung jemand auf die Idee kommen sollte die Dauer der Messung zu verändern
-    
     local_dauer_val = neue_dauer;
     local_abtastrate = abtastrate;
     disp(local_dauer_val);
@@ -31,6 +36,7 @@ function startProcess()
 
     while sec <= local_dauer_val
         
+        
         if stop == 1 then
             disp("Messung gestoppt.");
             break
@@ -38,7 +44,7 @@ function startProcess()
 
         setOutputFunction(sec);
         disp(sec);
-        /*
+        
         voltage1 = call("cab", channel1, 1, "i", inputValue2, 2, "i", "out", [1,1], 3, "r");
         e.data(sec, 2) = voltage1;
 
@@ -50,7 +56,7 @@ function startProcess()
 
         voltage4 = call("cab", channel4, 1, "i", inputValue2, 2, "i", "out", [1,1], 3, "r");
         e4.data(sec, 2) = voltage4;
-        */
+        
         
         //berechne neuer Zeitpunkt 
         sleep(local_abtastrate * 1000);
@@ -58,6 +64,8 @@ function startProcess()
 
         
     end
+    disp("analog outputs auf 0 setzen");
+    call("cao", 2.5, 1, "r", 2.5 , 2, "r", "out", [1,1], 3, "i");
 endfunction
 
 function toggleGraph(tagName, visible)
@@ -119,6 +127,7 @@ uicontrol(f, "style", "text", "string", " 1/s", "position", [130 740 20 20], "ba
 
 // --- Globale Daten-Arrays ---
 global t_list a1_list a2_list;
+global neue_dauer;
 t_list = [];
 a1_list = [];
 a2_list = [];
@@ -149,7 +158,7 @@ uicontrol(f, "style", "pushbutton", "string", "Entfernen", "position", [280 710 
 uicontrol(f, "style", "pushbutton", "string", "Ersetzen", "position", [280 670 100 30], "callback", "replace_checkpoint()");
 
 // --- Messung Starten
-uicontrol(f, "style", "pushbutton", "string", "Messung starten", "position", [20 700 130 30], ...
+uicontrol(f, "style", "pushbutton", "string", "Messung starten", "position", [20 640 130 30], ...
     "callback", "startProcess()");
 // --- Messung Stoppen
 uicontrol(f, "style", "pushbutton", "string", "Messung stopen", "position", [20 600 130 30], "callback", "setStop()");
@@ -177,7 +186,7 @@ ax = newaxes();
 ax.axes_bounds = [-0.075, 0.25, 1, 0.75]; // Fill frame2 (which is lower 600px of 800px)
 minVoltageDisplay = 0;
 maxVoltageDisplay = 10;
-timeBuffer = 80;
+timeBuffer = neue_dauer;
 
 plot(0:timeBuffer, zeros(1, timeBuffer + 1));
 e1 = gce().children(1);
@@ -252,6 +261,7 @@ function add_checkpoint()
     global t_list a1_list a2_list;
     global t_input a1_input a2_input;
     global t_box a1_box a2_box;
+    global neue_dauer
 
     // Eingaben auslesen und in Zahlen umwandeln
     
@@ -259,11 +269,11 @@ function add_checkpoint()
     a1_val = evstr(a1_input.string);
     a2_val = evstr(a2_input.string);
 
-    // Werte zur Liste hinzufügen, wenn die angebene dauer> Messdauer, dann nimmt er einfach die Messdauer.
-    if t_val < dauer_val then
+    // Werte zur Liste hinzufügen, wenn die angebene neue_dauer> Messdauer, dann nimmt er einfach die Messdauer.
+    if t_val < neue_dauer then
         t_list($+1)  = t_val;
     else   
-        t_list($+1)  = dauer_val; 
+        t_list($+1)  = neue_dauer; 
     end    
 
     if a1_val < 10 then   
@@ -357,6 +367,7 @@ function updateInputFunction()
 
     // Neue Dauer auslesen
     neue_dauer = evstr(dauer_input.string);
+    disp(neue_dauer);
     
     // Zweite Achse aktivieren
     f = gcf();
@@ -382,6 +393,40 @@ function updateInputFunction()
     e2.visible = "on";
     e2.thickness = 2;
 
+    gca().data_bounds = [0, 0; neue_dauer, 10];
+
+    plot(0:neue_dauer, zeros(1, neue_dauer + 1));
+    e1 = gce().children(1);
+    e1.tag = "minuteVoltage1";
+    e1.foreground = color("black");
+    e1.visible = "on";
+    e1.thickness = 2;
+
+    plot(0:neue_dauer, zeros(1, neue_dauer + 1));
+    e2 = gce().children(1);
+    e2.tag = "minuteVoltage2";
+    e2.foreground = color("green");
+    e2.visible = "on";
+    e2.thickness = 2;
+
+
+    plot(0:neue_dauer, zeros(1, neue_dauer + 1));
+    e3 = gce().children(1);
+    e3.tag = "minuteVoltage3";
+    e3.foreground = color("blue");
+    e3.visible = "on";
+    e3.thickness = 2;
+
+
+    plot(0:neue_dauer, zeros(1, neue_dauer + 1));
+    e4 = gce().children(1);
+    e4.tag = "minuteVoltage4";
+    e4.foreground = color("red");
+    e4.visible = "on";
+    e4.thickness = 2;
+
+
+    gca().title.text = "Spannungsverlauf";
     gca().data_bounds = [0, 0; neue_dauer, 10];
 endfunction
 
@@ -472,8 +517,10 @@ function setOutputFunction(sec)
     // Ausgabe zur Kontrolle
     mprintf("t = %.2f s | AO1 = %.2f V | AO2 = %.2f V\n", sec, output_A1, output_A2);
 
-    // Falls LabJack verfügbar: diese Zeilen aktivieren
-    // call("cao", 0, output_A1, "i", 1, "r"); // AO1
-    // call("cao", 1, output_A2, "i", 1, "r"); // AO2
+    disp(output_A2);
+    err= call("cao", (output_A1+10)/4, 1, "r", (output_A2+10)/4, 2, "r", "out", [1,1], 3, "i");
+    if err <> 0 then
+        disp("Fehler beim Setzen von AO1: Fehlercode " + string(err));
+    end
 endfunction
 
