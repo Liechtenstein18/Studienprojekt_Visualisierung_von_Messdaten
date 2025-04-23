@@ -66,6 +66,8 @@ function startProcess()
     end
     disp("analog outputs auf 0 setzen");
     call("cao", 2.5, 1, "r", 2.5 , 2, "r", "out", [1,1], 3, "i");
+    //zeit auf 0 setzen
+    sec = 1;
 endfunction
 
 function toggleGraph(tagName, visible)
