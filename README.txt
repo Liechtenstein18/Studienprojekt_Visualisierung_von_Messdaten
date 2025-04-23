@@ -29,5 +29,26 @@ ist
 soll
 regelgröße
 regeldifferenz
+----------------------------------------
+
+Ideen:
+
+- Dynamische Achsen anzeige für die Spannungsgraphen
+
+- Abtastrate einbauen, debuggen
+
+- nach dem Startprozess, wird zeit auf 0 gesetzt. 
+
+- wenn möglich, drückbare Buttons hervorheben, bzw nicht drückbare ausgrauen
+
+- clear button für liste (löscht alle Werte)
+
+- Während das Programm läuft, soll der Nutzer keine Änderungen.
+
+- Messung stoppen, überlegen/überarbeiten
+
+- Export testen, eventuell anpassen
+
+
 
 
