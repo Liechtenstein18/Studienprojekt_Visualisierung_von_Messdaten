@@ -131,6 +131,7 @@ uicontrol(f, "style", "text", "string", " 1/s", "position", [130 740 20 20], "ba
 global t_list a1_list a2_list;
 global neue_dauer;
 global ax bax;
+global rem_point rep_point;
 t_list = [];
 a1_list = [];
 a2_list = [];
@@ -174,7 +175,9 @@ cb4 = uicontrol("style", "checkbox", "parent", f, "string", "Input 4", "value", 
 
 //drop down for the export button
 global export_format_dropdown;
-export_format_dropdown = uicontrol(f, "style", "popupmenu", "string", ["png"; "pdf"; "svg"; "emf"; "eps"], "position", [750 30 100 20]);
+export_format_dropdown = uicontrol(f, "style", "popupmenu", ...
+    "string", ["png"; "pdf"; "svg"; "emf"; "eps"], ...
+    "position", [750 30 100 20]);
 
 //export button
 uicontrol(f, "style", "pushbutton", "string", "Export", "position", [860 30 100 20], "callback", "export()");    
@@ -259,13 +262,9 @@ function add_checkpoint()
     global t_box a1_box a2_box;
     global neue_dauer
 
-    nneue_dauer = evstr(dauer_input.string);
-
     // Eingaben auslesen und in Zahlen umwandeln
     
     t_val  = evstr(t_input.string);
-    disp(t_val);
-    disp(neue_dauer);
     a1_val = evstr(a1_input.string);
     a2_val = evstr(a2_input.string);
 
@@ -326,8 +325,10 @@ function remove_checkpoint()
         t_box.value = 0;
         a1_box.value = 0;
         a2_box.value = 0;
+        
 
         update_input_plot();
+        on_listbox_select()
     end
 endfunction
 
@@ -358,6 +359,7 @@ function replace_checkpoint()
         a1_box.string = string(a1_list);
         a2_box.string = string(a2_list);
         update_input_plot();
+        on_listbox_select()
     end
 endfunction
 
@@ -374,6 +376,7 @@ function on_listbox_select()
         rep_point.enable = "off";
     end
 endfunction
+
 
 function updateInputFunction()
     global dauer_input;
@@ -493,15 +496,16 @@ function update_input_plot()
     // Plot aktualisieren
     f = gcf();
     scf(f);
-    /*
+    
     // A1 updaten
     a1_plot = findobj("tag", "A1");
     a1_plot.data = [t' y1'];
 
     // A2 updaten
+    
     a2_plot = findobj("tag", "A2");
     a2_plot.data = [t' y2'];
-    */
+    
 endfunction
 
 function setStop() 
