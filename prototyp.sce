@@ -1,9 +1,9 @@
 // -*- Load LabJack U12 Custom DLL -*-
-ilib_for_link(["cab", "cao"], "mile11.c", [], "c");
-exec('loader.sce');
+//ilib_for_link(["cab", "cao"], "mile11.c", [], "c");
+//exec('loader.sce');
 
 disp("analog outputs auf 0 setzen");
-call("cao", 2.5, 1, "r", 2.5 , 2, "r", "out", [1,1], 3, "i");
+//call("cao", 2.5, 1, "r", 2.5 , 2, "r", "out", [1,1], 3, "i");
 
 //für den start der Messung
 function startProcess()
@@ -23,7 +23,7 @@ function startProcess()
 
     stop = 0;
 
-    e = findobj("tag", "minuteVoltage1");
+    e1 = findobj("tag", "minuteVoltage1");
     e2 = findobj("tag", "minuteVoltage2");
     e3 = findobj("tag", "minuteVoltage3");
     e4 = findobj("tag", "minuteVoltage4");
@@ -44,7 +44,7 @@ function startProcess()
 
         setOutputFunction(sec);
         disp(sec);
-        
+        /*
         voltage1 = call("cab", channel1, 1, "i", inputValue2, 2, "i", "out", [1,1], 3, "r");
         e.data(sec, 2) = voltage1;
 
@@ -56,7 +56,7 @@ function startProcess()
 
         voltage4 = call("cab", channel4, 1, "i", inputValue2, 2, "i", "out", [1,1], 3, "r");
         e4.data(sec, 2) = voltage4;
-        
+        */
         
         //berechne neuer Zeitpunkt 
         sleep(local_abtastrate * 1000);
@@ -65,7 +65,7 @@ function startProcess()
         
     end
     disp("analog outputs auf 0 setzen");
-    call("cao", 2.5, 1, "r", 2.5 , 2, "r", "out", [1,1], 3, "i");
+    //call("cao", 2.5, 1, "r", 2.5 , 2, "r", "out", [1,1], 3, "i");
     //zeit auf 0 setzen
     sec = 1;
 endfunction
@@ -130,14 +130,15 @@ uicontrol(f, "style", "text", "string", " 1/s", "position", [130 740 20 20], "ba
 // --- Globale Daten-Arrays ---
 global t_list a1_list a2_list;
 global neue_dauer;
+global ax bax;
 t_list = [];
 a1_list = [];
 a2_list = [];
 
 // --- Tabellen (Listboxen) ---
-t_box  = uicontrol(f, "style", "listbox", "position", [400 620 40 150], "string", "");
-a1_box = uicontrol(f, "style", "listbox", "position", [450 620 40 150], "string", "");
-a2_box = uicontrol(f, "style", "listbox", "position", [500 620 40 150], "string", "");
+t_box  = uicontrol(f, "style", "listbox", "position", [400 620 40 150], "string", "", "callback", "on_listbox_select()");
+a1_box = uicontrol(f, "style", "listbox", "position", [450 620 40 150], "string", "", "callback", "on_listbox_select()");
+a2_box = uicontrol(f, "style", "listbox", "position", [500 620 40 150], "string", "", "callback", "on_listbox_select()");
 
 //eingabe feld beschriftung
 uicontrol(f, "style", "text", "string", "Zeitpunkt: ", "position", [160 750 60 30], "backgroundcolor", [0.8 0.8 0.8], "horizontalalignment", "right");
@@ -156,8 +157,8 @@ uicontrol(f, "style", "text", "string", "A2", "position", [500 770 40 20], "back
 
 // --- Hinzufügen-Button ---
 uicontrol(f, "style", "pushbutton", "string", "Hinzufügen", "position", [280 750 100 30], "callback", "add_checkpoint()");
-uicontrol(f, "style", "pushbutton", "string", "Entfernen", "position", [280 710 100 30], "callback", "remove_checkpoint()");
-uicontrol(f, "style", "pushbutton", "string", "Ersetzen", "position", [280 670 100 30], "callback", "replace_checkpoint()");
+rem_point = uicontrol(f, "style", "pushbutton", "string", "Entfernen", "position", [280 710 100 30], "callback", "remove_checkpoint()", "enable", "off");
+rep_point = uicontrol(f, "style", "pushbutton", "string", "Ersetzen", "position", [280 670 100 30], "callback", "replace_checkpoint()", "enable", "off");
 
 // --- Messung Starten
 uicontrol(f, "style", "pushbutton", "string", "Messung starten", "position", [20 640 130 30], ...
@@ -166,29 +167,23 @@ uicontrol(f, "style", "pushbutton", "string", "Messung starten", "position", [20
 uicontrol(f, "style", "pushbutton", "string", "Messung stopen", "position", [20 600 130 30], "callback", "setStop()");
 
 //checkboxes für das auswählen der plots
-cb1 = uicontrol("style", "checkbox", "parent", f, "string", "Input 1", "value", 1, ...
-    "position", [820 500 140 20], "callback", strcat(["toggleGraph(""minuteVoltage1"", gcbo.value)"]));
-cb2 = uicontrol("style", "checkbox", "parent", f, "string", "Input 2", "value", 1, ...
-    "position", [820 460 140 20], "callback", strcat(["toggleGraph(""minuteVoltage2"", gcbo.value)"]));
-cb3 = uicontrol("style", "checkbox", "parent", f, "string", "Input 3", "value", 1, ...
-    "position", [820 420 140 20], "callback", strcat(["toggleGraph(""minuteVoltage3"", gcbo.value)"]));
-cb4 = uicontrol("style", "checkbox", "parent", f, "string", "Input 4", "value", 1, ...
-    "position", [820 380 140 20], "callback", strcat(["toggleGraph(""minuteVoltage4"", gcbo.value)"]));
+cb1 = uicontrol("style", "checkbox", "parent", f, "string", "Input 1", "value", 1, "position", [820 500 140 20], "callback", strcat(["toggleGraph(""minuteVoltage1"", gcbo.value)"]));
+cb2 = uicontrol("style", "checkbox", "parent", f, "string", "Input 2", "value", 1, "position", [820 460 140 20], "callback", strcat(["toggleGraph(""minuteVoltage2"", gcbo.value)"]));
+cb3 = uicontrol("style", "checkbox", "parent", f, "string", "Input 3", "value", 1, "position", [820 420 140 20], "callback", strcat(["toggleGraph(""minuteVoltage3"", gcbo.value)"]));
+cb4 = uicontrol("style", "checkbox", "parent", f, "string", "Input 4", "value", 1, "position", [820 380 140 20], "callback", strcat(["toggleGraph(""minuteVoltage4"", gcbo.value)"]));
 
 //drop down for the export button
 global export_format_dropdown;
-export_format_dropdown = uicontrol(f, "style", "popupmenu", ...
-    "string", ["png"; "pdf"; "svg"; "emf"; "eps"], ...
-    "position", [750 30 100 20]);
+export_format_dropdown = uicontrol(f, "style", "popupmenu", "string", ["png"; "pdf"; "svg"; "emf"; "eps"], "position", [750 30 100 20]);
+
 //export button
-uicontrol(f, "style", "pushbutton", "string", "Export", "position", [860 30 100 20], ...
-  "callback", "export()");    
-    
+uicontrol(f, "style", "pushbutton", "string", "Export", "position", [860 30 100 20], "callback", "export()");    
+timeBuffer = evstr(dauer_input.string);    
 ax = newaxes();
 ax.axes_bounds = [-0.075, 0.25, 1, 0.75]; // Fill frame2 (which is lower 600px of 800px)
 minVoltageDisplay = 0;
 maxVoltageDisplay = 10;
-timeBuffer = neue_dauer;
+
 
 plot(0:timeBuffer, zeros(1, timeBuffer + 1));
 e1 = gce().children(1);
@@ -238,23 +233,22 @@ stop = 1; //0 = false , 1 = true
 bax = newaxes();
 bax.axes_bounds = [0.55, 0.00, 0.45, 0.3]; 
 
+plot(0:timeBuffer, zeros(1, timeBuffer + 1));
+e5 = gce().children(1);
+e5.tag = "A1";
+e5.foreground = color("red");
+e5.visible = "on";
+e5.thickness = 2;
 
 plot(0:timeBuffer, zeros(1, timeBuffer + 1));
-e1 = gce().children(1);
-e1.tag = "A1";
-e1.foreground = color("red");
-e1.visible = "on";
-e1.thickness = 2;
-
-plot(0:timeBuffer, zeros(1, timeBuffer + 1));
-e1 = gce().children(1);
-e1.tag = "A2";
-e1.foreground = color("black");
-e1.visible = "on";
-e1.thickness = 2;
+e6 = gce().children(1);
+e6.tag = "A2";
+e6.foreground = color("black");
+e6.visible = "on";
+e6.thickness = 2;
 
 gca().title.text = "Eingabe Funktion";
-gca().data_bounds = [0, minVoltageDisplay; dauer_val, maxVoltageDisplay];
+gca().data_bounds = [0, minVoltageDisplay; timeBuffer, maxVoltageDisplay];
 
 // --- Funktion zum Hinzufügen eines Checkpoints ---
 // --- Funktion zum Hinzufügen eines Checkpoints ---
@@ -265,9 +259,13 @@ function add_checkpoint()
     global t_box a1_box a2_box;
     global neue_dauer
 
+    nneue_dauer = evstr(dauer_input.string);
+
     // Eingaben auslesen und in Zahlen umwandeln
     
     t_val  = evstr(t_input.string);
+    disp(t_val);
+    disp(neue_dauer);
     a1_val = evstr(a1_input.string);
     a2_val = evstr(a2_input.string);
 
@@ -363,6 +361,20 @@ function replace_checkpoint()
     end
 endfunction
 
+function on_listbox_select()
+    global t_box a1_box a2_box;
+    global rem_point rep_point;
+
+    idx = max([t_box.value, a1_box.value, a2_box.value]);
+    if idx > 0 then
+        rem_point.enable = "on";
+        rep_point.enable = "on";
+    else
+        rem_point.enable = "off";
+        rep_point.enable = "off";
+    end
+endfunction
+
 function updateInputFunction()
     global dauer_input;
     global neue_dauer;
@@ -375,28 +387,16 @@ function updateInputFunction()
     f = gcf();
     a = findobj("tag", "EingabeAchse");
     scf(f); // zur aktuellen Figur
+    
+    
+    updateEingabe();
+    updateSpannung();
+    
+endfunction
 
-    if ~isempty(a) then
-        sca(a);
-    end
-
-    // Plot aktualisieren
-    plot(0:neue_dauer, zeros(1, neue_dauer + 1));
-    e1 = gce().children(1);
-    e1.tag = "A1";
-    e1.foreground = color("red");
-    e1.visible = "on";
-    e1.thickness = 2;
-
-    plot(0:neue_dauer, zeros(1, neue_dauer + 1));
-    e2 = gce().children(1);
-    e2.tag = "A2";
-    e2.foreground = color("black");
-    e2.visible = "on";
-    e2.thickness = 2;
-
-    gca().data_bounds = [0, 0; neue_dauer, 10];
-
+function updateSpannung()
+    global ax;
+    sca(ax);
     plot(0:neue_dauer, zeros(1, neue_dauer + 1));
     e1 = gce().children(1);
     e1.tag = "minuteVoltage1";
@@ -411,14 +411,12 @@ function updateInputFunction()
     e2.visible = "on";
     e2.thickness = 2;
 
-
     plot(0:neue_dauer, zeros(1, neue_dauer + 1));
     e3 = gce().children(1);
     e3.tag = "minuteVoltage3";
     e3.foreground = color("blue");
     e3.visible = "on";
     e3.thickness = 2;
-
 
     plot(0:neue_dauer, zeros(1, neue_dauer + 1));
     e4 = gce().children(1);
@@ -427,16 +425,39 @@ function updateInputFunction()
     e4.visible = "on";
     e4.thickness = 2;
 
+    gca().data_bounds = [0, 0; neue_dauer, 10];
 
-    gca().title.text = "Spannungsverlauf";
+endfunction
+
+function updateEingabe()
+    global bax;
+    sca(bax);
+    plot(0:neue_dauer, zeros(1, neue_dauer + 1));
+
+    e5 = gce().children(1);
+    e5.tag = "A1";
+    e5.foreground = color("red");
+    e5.visible = "on";
+    e5.thickness = 2;
+
+    plot(0:neue_dauer, zeros(1, neue_dauer + 1));
+    e6 = gce().children(1);
+    e6.tag = "A2";
+    e6.foreground = color("black");
+    e6.visible = "on";
+    e6.thickness = 2;
+
     gca().data_bounds = [0, 0; neue_dauer, 10];
 endfunction
 
 function update_input_plot() 
     global t_list a1_list a2_list;
     global dauer_input;
+    global neue_dauer;
+    
 
-    dauer = evstr(dauer_input.string);
+    dauer = evstr(dauer_input.string); //alt, kann eigentlich gelöscht werden.
+    dauer = neue_dauer;
     
     // Initiale Zeitachse
     t = 0:1:dauer;
@@ -472,7 +493,7 @@ function update_input_plot()
     // Plot aktualisieren
     f = gcf();
     scf(f);
-
+    /*
     // A1 updaten
     a1_plot = findobj("tag", "A1");
     a1_plot.data = [t' y1'];
@@ -480,6 +501,7 @@ function update_input_plot()
     // A2 updaten
     a2_plot = findobj("tag", "A2");
     a2_plot.data = [t' y2'];
+    */
 endfunction
 
 function setStop() 
@@ -518,11 +540,12 @@ function setOutputFunction(sec)
 
     // Ausgabe zur Kontrolle
     mprintf("t = %.2f s | AO1 = %.2f V | AO2 = %.2f V\n", sec, output_A1, output_A2);
-
+    /*
     disp(output_A2);
     err= call("cao", (output_A1+10)/4, 1, "r", (output_A2+10)/4, 2, "r", "out", [1,1], 3, "i");
     if err <> 0 then
         disp("Fehler beim Setzen von AO1: Fehlercode " + string(err));
     end
+    */
 endfunction
 
