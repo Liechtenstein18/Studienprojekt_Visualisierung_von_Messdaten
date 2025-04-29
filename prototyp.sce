@@ -260,7 +260,8 @@ function add_checkpoint()
     global t_list a1_list a2_list;
     global t_input a1_input a2_input;
     global t_box a1_box a2_box;
-    global neue_dauer
+    global neue_dauer;
+    global abtastrate;
 
     // Eingaben auslesen und in Zahlen umwandeln
     
@@ -269,22 +270,24 @@ function add_checkpoint()
     a2_val = evstr(a2_input.string);
 
     // Werte zur Liste hinzufügen, wenn die angebene neue_dauer> Messdauer, dann nimmt er einfach die Messdauer.
-    if t_val < neue_dauer then
-        t_list($+1)  = t_val;
-    else   
-        t_list($+1)  = neue_dauer; 
-    end    
+    if modulo(t_val, abtastrate) == 0 then
+        if t_val < neue_dauer then
+            t_list($+1)  = t_val;
+        else
+            t_list($+1)  = neue_dauer; 
+        end    
 
-    if a1_val < 10 then   
-        a1_list($+1) = a1_val;
-    else
-        a1_list($+1) = 10;
-    end
+        if a1_val < 10 then   
+            a1_list($+1) = a1_val;
+        else
+            a1_list($+1) = 10;
+        end
 
-    if a2_val < 10 then   
-        a2_list($+1) = a2_val;
-    else
-        a2_list($+1) = 10;
+        if a2_val < 10 then   
+            a2_list($+1) = a2_val;
+        else
+            a2_list($+1) = 10;
+        end
     end
 
     // Listboxen aktualisieren
@@ -350,10 +353,12 @@ function replace_checkpoint()
         a2_val = evstr(a2_input.string);
 
         // Werte ersetzen
-        t_list(idx)  = t_val;
-        a1_list(idx) = a1_val;
-        a2_list(idx) = a2_val;
-
+        if modulo(t_val, abtastrate) == 0 then
+            t_list(idx)  = t_val;
+            a1_list(idx) = a1_val;
+            a2_list(idx) = a2_val;
+        end
+        
         // GUI aktualisieren
         t_box.string  = string(t_list);
         a1_box.string = string(a1_list);
