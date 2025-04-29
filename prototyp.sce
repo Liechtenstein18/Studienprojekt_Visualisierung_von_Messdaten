@@ -34,8 +34,7 @@ function startProcess()
     inputValue2 = 10;
 
     while sec <= neue_dauer
-        
-        
+
         if stop == 1 then
             disp("Messung gestoppt.");
             break
@@ -164,7 +163,7 @@ rep_point = uicontrol(f, "style", "pushbutton", "string", "Ersetzen", "position"
 uicontrol(f, "style", "pushbutton", "string", "Messung starten", "position", [20 640 130 30], ...
     "callback", "startProcess()");
 // --- Messung Stoppen
-uicontrol(f, "style", "pushbutton", "string", "Messung stopen", "position", [20 600 130 30], "callback", "setStop()");
+uicontrol(f, "style", "pushbutton", "string", "Messung stopen", "position", [20 600 130 30], "callback", "setStop()", "callback_type", 12);
 
 //checkboxes für das auswählen der plots
 cb1 = uicontrol("style", "checkbox", "parent", f, "string", "Input 1", "value", 1, "position", [820 500 140 20], "callback", strcat(["toggleGraph(""minuteVoltage1"", gcbo.value)"]));
@@ -510,7 +509,6 @@ endfunction
 function setStop() 
     global stop;
     stop = 1;
-    disp("Messung gestoppt.");
     //ausgänge auf 0 setzen
     //call("cao", 0, 0, "i", 1, "r");
     //call("cao", 1, 0, "i", 1, "r");
