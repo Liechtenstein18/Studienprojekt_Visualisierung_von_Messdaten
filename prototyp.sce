@@ -10,16 +10,15 @@ function startProcess()
     
     global sec;
     global stop;
-    global dauer_val;
+    global abtastrate_input;
     global abtastrate;
+    global dauer_input;
     global neue_dauer;
 
-    // Neue Dauer auslesen
+    abtastrate = 1 / evstr(abtastrate_input.string);
+    disp(abtastrate);
     neue_dauer = evstr(dauer_input.string);
-    //falls in der Zeit der Messung jemand auf die Idee kommen sollte die Dauer der Messung zu verändern
-    local_dauer_val = neue_dauer;
-    local_abtastrate = abtastrate;
-    disp(local_dauer_val);
+    disp(neue_dauer);
 
     stop = 0;
 
@@ -34,7 +33,7 @@ function startProcess()
     channel4 = 6;
     inputValue2 = 10;
 
-    while sec <= local_dauer_val
+    while sec <= neue_dauer
         
         
         if stop == 1 then
@@ -59,8 +58,8 @@ function startProcess()
         */
         
         //berechne neuer Zeitpunkt 
-        sleep(local_abtastrate * 1000);
-        sec = sec + local_abtastrate;
+        sleep(abtastrate * 1000);
+        sec = sec + abtastrate;
 
         
     end
@@ -111,7 +110,8 @@ f.resize = "off";
 
 
 // --- GUI-Komponenten global machen ---
-global dauer_input abtastrate_input dauer_val abtastrate;
+global dauer_input abtastrate_input abtastrate;
+global neue_dauer;
 global t_input a1_input a2_input;
 global t_box a1_box a2_box;
 
@@ -119,7 +119,7 @@ global t_box a1_box a2_box;
 uicontrol(f, "style", "text", "string", " Messparameter", "position", [20 780 150 20], "backgroundcolor", [0.8 0.8 0.8], "horizontalalignment", "left");
 uicontrol(f, "style", "text", "string", " Messdauer:", "position", [20 760 100 20], "backgroundcolor", [1 1 1], "horizontalalignment", "left");
 dauer_input = uicontrol(f, "style", "edit", "string", "15", "position", [80 760 50 20], "callback", "updateInputFunction()");
-dauer_val = evstr(dauer_input.string); // Wandelt z. B. "80" → 80 (Double)
+neue_dauer = evstr(dauer_input.string); // Wandelt z. B. "80" → 80 (Double)
 uicontrol(f, "style", "text", "string", " s", "position", [130 760 20 20], "backgroundcolor", [1 1 1]);
 
 uicontrol(f, "style", "text", "string", " Abtastrate:", "position", [20 740 100 20], "backgroundcolor", [1 1 1], "horizontalalignment", "left");
@@ -129,7 +129,6 @@ uicontrol(f, "style", "text", "string", " 1/s", "position", [130 740 20 20], "ba
 
 // --- Globale Daten-Arrays ---
 global t_list a1_list a2_list;
-global neue_dauer;
 global ax bax;
 global rem_point rep_point;
 t_list = [];
@@ -460,8 +459,6 @@ function update_input_plot()
     global dauer_input;
     global neue_dauer;
     
-
-    dauer = evstr(dauer_input.string); //alt, kann eigentlich gelöscht werden.
     dauer = neue_dauer;
     
     // Initiale Zeitachse
