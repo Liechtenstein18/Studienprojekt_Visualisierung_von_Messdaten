@@ -253,6 +253,8 @@ e6.thickness = 2;
 gca().title.text = "Eingabe Funktion";
 gca().data_bounds = [0, minVoltageDisplay; timeBuffer, maxVoltageDisplay];
 
+xlabel("Zeit (s)");
+ylabel("Spannung (V)");
 // --- Funktion zum Hinzufügen eines Checkpoints ---
 // --- Funktion zum Hinzufügen eines Checkpoints ---
 function add_checkpoint()
