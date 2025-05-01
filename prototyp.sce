@@ -7,14 +7,23 @@ disp("analog outputs auf 0 setzen");
 
 //für den start der Messung
 function startProcess()
-    
     global sec;
     global stop;
     global abtastrate_input;
     global abtastrate;
     global dauer_input;
     global neue_dauer;
-
+    global clear_point;
+    global add_button;
+    global mess_start;
+    global mess_stopp;
+    
+    mess_start.enable = "off";
+    mess_stopp.enable = "on";
+    clear_point.enable = "off";
+    abtastrate_input.enable = "off";
+    add_button.enable = "off";
+    dauer_input.enable = "off";
     abtastrate = 1 / evstr(abtastrate_input.string);
     disp(abtastrate);
     neue_dauer = evstr(dauer_input.string);
@@ -62,6 +71,12 @@ function startProcess()
 
         
     end
+    clear_point.enable = "on";
+    abtastrate_input.enable = "on";
+    dauer_input.enable = "on";
+    add_button.enable = "on";
+    mess_start.enable = "on";
+    mess_stopp.enable = "off";
     disp("analog outputs auf 0 setzen");
     //call("cao", 2.5, 1, "r", 2.5 , 2, "r", "out", [1,1], 3, "i");
     //zeit auf 0 setzen
@@ -117,19 +132,19 @@ global t_box a1_box a2_box;
 // --- Beschriftungen & Eingaben oben ---
 uicontrol(f, "style", "text", "string", " Messparameter", "position", [20 780 150 20], "backgroundcolor", [0.8 0.8 0.8], "horizontalalignment", "left");
 uicontrol(f, "style", "text", "string", " Messdauer:", "position", [20 760 100 20], "backgroundcolor", [1 1 1], "horizontalalignment", "left");
-dauer_input = uicontrol(f, "style", "edit", "string", "15", "position", [80 760 50 20], "callback", "updateInputFunction()");
+dauer_input = uicontrol(f, "style", "edit", "string", "15", "position", [80 760 50 20], "callback", "updateInputFunction()", "enable", "on");
 neue_dauer = evstr(dauer_input.string); // Wandelt z. B. "80" → 80 (Double)
 uicontrol(f, "style", "text", "string", " s", "position", [130 760 20 20], "backgroundcolor", [1 1 1]);
 
 uicontrol(f, "style", "text", "string", " Abtastrate:", "position", [20 740 100 20], "backgroundcolor", [1 1 1], "horizontalalignment", "left");
-abtastrate_input = uicontrol(f, "style", "edit", "string", "10", "position", [80 740 50 20]);
+abtastrate_input = uicontrol(f, "style", "edit", "string", "10", "position", [80 740 50 20], "enable", "on");
 abtastrate = 1 / evstr(abtastrate_input.string); // umformen der Abtastrate in 1/s
 uicontrol(f, "style", "text", "string", " 1/s", "position", [130 740 20 20], "backgroundcolor", [1 1 1]);
 
 // --- Globale Daten-Arrays ---
 global t_list a1_list a2_list;
 global ax bax;
-global rem_point rep_point;
+global add_button rem_point rep_point;
 t_list = [];
 a1_list = [];
 a2_list = [];
@@ -155,15 +170,15 @@ uicontrol(f, "style", "text", "string", "A1", "position", [450 770 40 20], "back
 uicontrol(f, "style", "text", "string", "A2", "position", [500 770 40 20], "backgroundcolor", [0.8 0.8 0.8], "horizontalalignment", "center");
 
 // --- Hinzufügen-Button ---
-uicontrol(f, "style", "pushbutton", "string", "Hinzufügen", "position", [280 750 100 30], "callback", "add_checkpoint()");
+add_button = uicontrol(f, "style", "pushbutton", "string", "Hinzufügen", "position", [280 750 100 30], "callback", "add_checkpoint()", "enable", "on");
 rem_point = uicontrol(f, "style", "pushbutton", "string", "Entfernen", "position", [280 710 100 30], "callback", "remove_checkpoint()", "enable", "off");
 rep_point = uicontrol(f, "style", "pushbutton", "string", "Ersetzen", "position", [280 670 100 30], "callback", "replace_checkpoint()", "enable", "off");
+clear_point = uicontrol(f, "style", "pushbutton", "string", "Clear", "position", [280 630 100 30], "callback", "clear_checkpoint()", "enable", "on");
 
 // --- Messung Starten
-uicontrol(f, "style", "pushbutton", "string", "Messung starten", "position", [20 640 130 30], ...
-    "callback", "startProcess()");
+mess_start = uicontrol(f, "style", "pushbutton", "string", "Messung starten", "position", [20 640 130 30], "callback", "startProcess()", "enable", "on");
 // --- Messung Stoppen
-uicontrol(f, "style", "pushbutton", "string", "Messung stopen", "position", [20 600 130 30], "callback", "setStop()", "callback_type", 12);
+mess_stopp = uicontrol(f, "style", "pushbutton", "string", "Messung stoppen", "position", [20 600 130 30], "callback", "setStop()", "callback_type", 12, "enable", "off");
 
 //checkboxes für das auswählen der plots
 cb1 = uicontrol("style", "checkbox", "parent", f, "string", "Input 1", "value", 1, "position", [820 500 140 20], "callback", strcat(["toggleGraph(""minuteVoltage1"", gcbo.value)"]));
@@ -266,36 +281,57 @@ function add_checkpoint()
     // Eingaben auslesen und in Zahlen umwandeln
     
     t_val  = evstr(t_input.string);
+    if t_val < 0 then
+        t_val = 0;
+    end
     a1_val = evstr(a1_input.string);
+    if a1_val < 0 then
+        a1_val = 0;
+    end
     a2_val = evstr(a2_input.string);
+    if a2_val < 0 then
+        a2_val = 0;
+    end
 
-    // Werte zur Liste hinzufügen, wenn die angebene neue_dauer> Messdauer, dann nimmt er einfach die Messdauer.
+     // Prüfen, ob t_val bereits in t_list enthalten ist
+     idx = find(t_list == t_val);
+     
+        // Werte zur Liste hinzufügen, wenn die angebene neue_dauer> Messdauer, dann nimmt er einfach die Messdauer.
     if modulo(t_val, abtastrate) == 0 then
-        if t_val < neue_dauer then
-            t_list($+1)  = t_val;
+        if ~isempty(idx) then
+            replace_checkpoint_at(idx(1), t_val, a1_val, a2_val); // Zeitwert existiert – alten Punkt ersetzen
         else
-            t_list($+1)  = neue_dauer; 
-        end    
+            if t_val < neue_dauer then
+                t_list($+1)  = t_val;
+            else
+                t_list($+1)  = neue_dauer; 
+            end    
 
-        if a1_val < 10 then   
-            a1_list($+1) = a1_val;
-        else
-            a1_list($+1) = 10;
-        end
+            if a1_val < 10 then   
+                a1_list($+1) = a1_val;
+            else
+                a1_list($+1) = 10;
+            end
 
-        if a2_val < 10 then   
-            a2_list($+1) = a2_val;
-        else
-            a2_list($+1) = 10;
+            if a2_val < 10 then   
+                a2_list($+1) = a2_val;
+            else
+                a2_list($+1) = 10;
+            end
         end
     end
+
+    // Liste nach t_list sortieren
+    [t_list, indices] = gsort(t_list, "g", "i");
+    a1_list = a1_list(indices);
+    a2_list = a2_list(indices);
 
     // Listboxen aktualisieren
     t_box.string  = string(t_list);
     a1_box.string = string(a1_list);
     a2_box.string = string(a2_list);
-
     update_input_plot();
+    
 endfunction
 
 function remove_checkpoint()
@@ -364,8 +400,54 @@ function replace_checkpoint()
         a1_box.string = string(a1_list);
         a2_box.string = string(a2_list);
         update_input_plot();
-        on_listbox_select()
+        on_listbox_select();
     end
+endfunction
+
+function replace_checkpoint_at(index, t_val, a1_val, a2_val)
+    global t_list a1_list a2_list;
+    global t_box a1_box a2_box;
+
+    // Werte korrigieren und begrenzen
+    if modulo(t_val, abtastrate) == 0 then
+        if t_val > neue_dauer then
+            t_val = neue_dauer;
+        end
+
+        a1_val = min(a1_val, 10);
+        a2_val = min(a2_val, 10);
+
+        // Ersetzen
+        t_list(index)  = t_val;
+        a1_list(index) = a1_val;
+        a2_list(index) = a2_val;
+
+        // GUI aktualisieren
+        t_box.string  = string(t_list);
+        a1_box.string = string(a1_list);
+        a2_box.string = string(a2_list);
+        update_input_plot();
+        on_listbox_select();
+    end
+endfunction
+
+
+
+function clear_checkpoint()
+    global t_list a1_list a2_list;
+    global t_box a1_box a2_box;
+
+    // Datenlisten leeren
+    t_list = [];
+    a1_list = [];
+    a2_list = [];
+
+    // GUI-Listboxen leeren
+    set(t_box, "string", "");
+    set(a1_box, "string", "");
+    set(a2_box, "string", "");
+
+    update_input_plot();
 endfunction
 
 function on_listbox_select()
@@ -389,7 +471,8 @@ function updateInputFunction()
 
     // Neue Dauer auslesen
     neue_dauer = evstr(dauer_input.string);
-    disp(neue_dauer);
+    update_input_plot();
+    
     
     // Zweite Achse aktivieren
     f = gcf();
@@ -462,8 +545,30 @@ function update_input_plot()
     global t_list a1_list a2_list;
     global dauer_input;
     global neue_dauer;
-    
+    global t_box a1_box a2_box;
+
+    neue_dauer = evstr(dauer_input.string); 
     dauer = neue_dauer;
+
+    disp("input plot update");
+    disp(dauer);
+
+    // Checkpoints außerhalb der Dauer entfernen
+    // Durch alle Punkte iterieren und prüfen, ob t > dauer
+    for i = 1:length(t_list)
+        if t_list(i) > dauer then
+            // Punkt löschen, wenn t > dauer
+            t_list(i) = [];
+            a1_list(i) = [];
+            a2_list(i) = [];
+        end
+    end
+
+    // Listboxen aktualisieren
+    t_box.string  = string(t_list);
+    a1_box.string = string(a1_list);
+    a2_box.string = string(a2_list);
+
     
     // Initiale Zeitachse
     t = 0:1:dauer;
@@ -505,13 +610,26 @@ function update_input_plot()
     a1_plot.data = [t' y1'];
 
     // A2 updaten
-    
     a2_plot = findobj("tag", "A2");
     a2_plot.data = [t' y2'];
-    
 endfunction
 
-function setStop() 
+function setStop()
+    global add_button;
+    global dauer_input;
+    global abtastrate_input;
+    global clear_point;
+    global mess_start;
+    global mess_stopp; 
+
+    mess_start.enable = "on";
+    mess_stopp.enable = "off";
+    clear_point.enable = "on";
+    abtastrate_input.enable = "on";
+    dauer_input.enable = "on";
+    add_button.enable = "on";
+    
+    
     global stop;
     stop = 1;
     //ausgänge auf 0 setzen
