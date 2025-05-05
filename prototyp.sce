@@ -1,9 +1,9 @@
 // -*- Load LabJack U12 Custom DLL -*-
-//ilib_for_link(["cab", "cao"], "mile11.c", [], "c");
-//exec('loader.sce');
+ilib_for_link(["cab", "cao"], "mile11.c", [], "c");
+exec('loader.sce');
 
 disp("analog outputs auf 0 setzen");
-//call("cao", 2.5, 1, "r", 2.5 , 2, "r", "out", [1,1], 3, "i");
+call("cao", 2.5, 1, "r", 2.5 , 2, "r", "out", [1,1], 3, "i");
 
 //für den start der Messung
 function startProcess()
@@ -51,7 +51,7 @@ function startProcess()
 
         setOutputFunction(sec);
         disp(sec);
-        /*
+        
         voltage1 = call("cab", channel1, 1, "i", inputValue2, 2, "i", "out", [1,1], 3, "r");
         e.data(sec, 2) = voltage1;
 
@@ -63,13 +63,12 @@ function startProcess()
 
         voltage4 = call("cab", channel4, 1, "i", inputValue2, 2, "i", "out", [1,1], 3, "r");
         e4.data(sec, 2) = voltage4;
-        */
+        
         
         //berechne neuer Zeitpunkt 
         sleep(abtastrate * 1000);
         sec = sec + abtastrate;
 
-        
     end
     clear_point.enable = "on";
     abtastrate_input.enable = "on";
@@ -78,7 +77,7 @@ function startProcess()
     mess_start.enable = "on";
     mess_stopp.enable = "off";
     disp("analog outputs auf 0 setzen");
-    //call("cao", 2.5, 1, "r", 2.5 , 2, "r", "out", [1,1], 3, "i");
+    call("cao", 2.5, 1, "r", 2.5 , 2, "r", "out", [1,1], 3, "i");
     //zeit auf 0 setzen
     sec = 1;
 endfunction
@@ -633,8 +632,8 @@ function setStop()
     global stop;
     stop = 1;
     //ausgänge auf 0 setzen
-    //call("cao", 0, 0, "i", 1, "r");
-    //call("cao", 1, 0, "i", 1, "r");
+    call("cao", 0, 0, "i", 1, "r");
+    call("cao", 1, 0, "i", 1, "r");
 endfunction
 
 function setOutputFunction(sec)
@@ -664,12 +663,12 @@ function setOutputFunction(sec)
 
     // Ausgabe zur Kontrolle
     mprintf("t = %.2f s | AO1 = %.2f V | AO2 = %.2f V\n", sec, output_A1, output_A2);
-    /*
+    
     disp(output_A2);
     err= call("cao", (output_A1+10)/4, 1, "r", (output_A2+10)/4, 2, "r", "out", [1,1], 3, "i");
     if err <> 0 then
         disp("Fehler beim Setzen von AO1: Fehlercode " + string(err));
     end
-    */
+    
 endfunction
 
