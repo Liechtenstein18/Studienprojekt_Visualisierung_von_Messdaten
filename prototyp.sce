@@ -1,12 +1,15 @@
 // -*- Load LabJack U12 Custom DLL -*-
-ilib_for_link(["cab", "cao"], "mile11.c", [], "c");
+ilib_for_link(["cab", "cao"], "mile12.c", [], "c");
 exec('loader.sce');
 
 disp("analog outputs auf 0 setzen");
 call("cao", 2.5, 1, "r", 2.5 , 2, "r", "out", [1,1], 3, "i");
 
+
+
 //für den start der Messung
 function startProcess()
+    
     global sec;
     global stop;
     global abtastrate_input;
@@ -17,17 +20,18 @@ function startProcess()
     global add_button;
     global mess_start;
     global mess_stopp;
-    
-    mess_start.enable = "off";
-    mess_stopp.enable = "on";
-    clear_point.enable = "off";
-    abtastrate_input.enable = "off";
-    add_button.enable = "off";
-    dauer_input.enable = "off";
-    abtastrate = 1 / evstr(abtastrate_input.string);
-    disp(abtastrate);
+
+     // Überprüfen, ob der Button schon existiert und korrekt gesetzt wurde
+     // Überprüfen, ob der Button bereits existiert
+     
+     initializeButtons()
+
+    // Neue Dauer auslesen
     neue_dauer = evstr(dauer_input.string);
-    disp(neue_dauer);
+    //falls in der Zeit der Messung jemand auf die Idee kommen sollte die Dauer der Messung zu verändern
+    local_dauer_val = neue_dauer;
+    local_abtastrate = abtastrate;
+    disp(local_dauer_val);
 
     stop = 0;
 
@@ -42,8 +46,20 @@ function startProcess()
     channel4 = 6;
     inputValue2 = 10;
 
-    while sec <= neue_dauer
-
+    disp("local_dauer_val");
+    disp(local_dauer_val);
+    mess_start.enable = "off";
+    mess_stopp.enable = "on";
+    clear_point.enable = "off";
+    abtastrate_input.enable = "off";
+    add_button.enable = "off";
+    dauer_input.enable = "off";
+    
+    while sec <= local_dauer_val
+        disp("local_dauer_val");
+    disp(local_dauer_val);
+        
+        
         if stop == 1 then
             disp("Messung gestoppt.");
             break
@@ -64,22 +80,22 @@ function startProcess()
         voltage4 = call("cab", channel4, 1, "i", inputValue2, 2, "i", "out", [1,1], 3, "r");
         e4.data(sec, 2) = voltage4;
         
-        
         //berechne neuer Zeitpunkt 
-        sleep(abtastrate * 1000);
-        sec = sec + abtastrate;
+        sleep(local_abtastrate * 1000);
+        sec = sec + local_abtastrate;
 
+        
     end
+    disp("analog outputs auf 0 setzen");
+    call("cao", 2.5, 1, "r", 2.5 , 2, "r", "out", [1,1], 3, "i");
+    //zeit auf 0 setzen
+    sec = 1;
     clear_point.enable = "on";
     abtastrate_input.enable = "on";
     dauer_input.enable = "on";
     add_button.enable = "on";
     mess_start.enable = "on";
     mess_stopp.enable = "off";
-    disp("analog outputs auf 0 setzen");
-    call("cao", 2.5, 1, "r", 2.5 , 2, "r", "out", [1,1], 3, "i");
-    //zeit auf 0 setzen
-    sec = 1;
 endfunction
 
 function toggleGraph(tagName, visible)
@@ -123,27 +139,30 @@ f.resize = "off";
 
 
 // --- GUI-Komponenten global machen ---
-global dauer_input abtastrate_input abtastrate;
-global neue_dauer;
+global dauer_input abtastrate_input dauer_val abtastrate;
 global t_input a1_input a2_input;
 global t_box a1_box a2_box;
 
 // --- Beschriftungen & Eingaben oben ---
 uicontrol(f, "style", "text", "string", " Messparameter", "position", [20 780 150 20], "backgroundcolor", [0.8 0.8 0.8], "horizontalalignment", "left");
 uicontrol(f, "style", "text", "string", " Messdauer:", "position", [20 760 100 20], "backgroundcolor", [1 1 1], "horizontalalignment", "left");
-dauer_input = uicontrol(f, "style", "edit", "string", "15", "position", [80 760 50 20], "callback", "updateInputFunction()", "enable", "on");
-neue_dauer = evstr(dauer_input.string); // Wandelt z. B. "80" → 80 (Double)
+dauer_input = uicontrol(f, "style", "edit", "string", "15", "position", [80 760 50 20], "callback", "updateInputFunction()");
+dauer_val = evstr(dauer_input.string); // Wandelt z. B. "80" → 80 (Double)
 uicontrol(f, "style", "text", "string", " s", "position", [130 760 20 20], "backgroundcolor", [1 1 1]);
+neue_dauer = evstr(dauer_input.string); // Wandelt z. B. "80" → 80 (Double)
+disp("neue dauer:");
+disp(neue_dauer);
 
 uicontrol(f, "style", "text", "string", " Abtastrate:", "position", [20 740 100 20], "backgroundcolor", [1 1 1], "horizontalalignment", "left");
-abtastrate_input = uicontrol(f, "style", "edit", "string", "10", "position", [80 740 50 20], "enable", "on");
+abtastrate_input = uicontrol(f, "style", "edit", "string", "10", "position", [80 740 50 20]);
 abtastrate = 1 / evstr(abtastrate_input.string); // umformen der Abtastrate in 1/s
 uicontrol(f, "style", "text", "string", " 1/s", "position", [130 740 20 20], "backgroundcolor", [1 1 1]);
 
 // --- Globale Daten-Arrays ---
 global t_list a1_list a2_list;
+global neue_dauer;
 global ax bax;
-global add_button rem_point rep_point;
+global rem_point rep_point;
 t_list = [];
 a1_list = [];
 a2_list = [];
@@ -176,8 +195,12 @@ clear_point = uicontrol(f, "style", "pushbutton", "string", "Clear", "position",
 
 // --- Messung Starten
 mess_start = uicontrol(f, "style", "pushbutton", "string", "Messung starten", "position", [20 640 130 30], "callback", "startProcess()", "enable", "on");
+
 // --- Messung Stoppen
 mess_stopp = uicontrol(f, "style", "pushbutton", "string", "Messung stoppen", "position", [20 600 130 30], "callback", "setStop()", "callback_type", 12, "enable", "off");
+
+
+
 
 //checkboxes für das auswählen der plots
 cb1 = uicontrol("style", "checkbox", "parent", f, "string", "Input 1", "value", 1, "position", [820 500 140 20], "callback", strcat(["toggleGraph(""minuteVoltage1"", gcbo.value)"]));
@@ -265,8 +288,6 @@ e6.thickness = 2;
 gca().title.text = "Eingabe Funktion";
 gca().data_bounds = [0, minVoltageDisplay; timeBuffer, maxVoltageDisplay];
 
-xlabel("Zeit (s)");
-ylabel("Spannung (V)");
 // --- Funktion zum Hinzufügen eines Checkpoints ---
 // --- Funktion zum Hinzufügen eines Checkpoints ---
 function add_checkpoint()
@@ -330,6 +351,7 @@ function add_checkpoint()
     a1_box.string = string(a1_list);
     a2_box.string = string(a2_list);
     update_input_plot();
+    updateEingabe();  
     
 endfunction
 
@@ -364,7 +386,6 @@ function remove_checkpoint()
         a1_box.value = 0;
         a2_box.value = 0;
         
-
         update_input_plot();
         on_listbox_select()
     end
@@ -388,18 +409,16 @@ function replace_checkpoint()
         a2_val = evstr(a2_input.string);
 
         // Werte ersetzen
-        if modulo(t_val, abtastrate) == 0 then
-            t_list(idx)  = t_val;
-            a1_list(idx) = a1_val;
-            a2_list(idx) = a2_val;
-        end
-        
+        t_list(idx)  = t_val;
+        a1_list(idx) = a1_val;
+        a2_list(idx) = a2_val;
+
         // GUI aktualisieren
         t_box.string  = string(t_list);
         a1_box.string = string(a1_list);
         a2_box.string = string(a2_list);
         update_input_plot();
-        on_listbox_select();
+        on_listbox_select()
     end
 endfunction
 
@@ -429,8 +448,6 @@ function replace_checkpoint_at(index, t_val, a1_val, a2_val)
         on_listbox_select();
     end
 endfunction
-
-
 
 function clear_checkpoint()
     global t_list a1_list a2_list;
@@ -470,15 +487,14 @@ function updateInputFunction()
 
     // Neue Dauer auslesen
     neue_dauer = evstr(dauer_input.string);
-    update_input_plot();
-    
+    disp(neue_dauer);
     
     // Zweite Achse aktivieren
     f = gcf();
     a = findobj("tag", "EingabeAchse");
     scf(f); // zur aktuellen Figur
     
-    
+    update_input_plot();
     updateEingabe();
     updateSpannung();
     
@@ -529,7 +545,7 @@ function updateEingabe()
     e5.foreground = color("red");
     e5.visible = "on";
     e5.thickness = 2;
-
+    disp("Eingabe Updatet");
     plot(0:neue_dauer, zeros(1, neue_dauer + 1));
     e6 = gce().children(1);
     e6.tag = "A2";
@@ -546,13 +562,11 @@ function update_input_plot()
     global neue_dauer;
     global t_box a1_box a2_box;
 
-    neue_dauer = evstr(dauer_input.string); 
+    updateEingabe();
+    dauer = evstr(dauer_input.string); //alt, kann eigentlich gelöscht werden.
     dauer = neue_dauer;
-
-    disp("input plot update");
     disp(dauer);
 
-    // Checkpoints außerhalb der Dauer entfernen
     // Durch alle Punkte iterieren und prüfen, ob t > dauer
     for i = 1:length(t_list)
         if t_list(i) > dauer then
@@ -567,7 +581,6 @@ function update_input_plot()
     t_box.string  = string(t_list);
     a1_box.string = string(a1_list);
     a2_box.string = string(a2_list);
-
     
     // Initiale Zeitachse
     t = 0:1:dauer;
@@ -611,29 +624,25 @@ function update_input_plot()
     // A2 updaten
     a2_plot = findobj("tag", "A2");
     a2_plot.data = [t' y2'];
+    
 endfunction
 
-function setStop()
-    global add_button;
-    global dauer_input;
-    global abtastrate_input;
-    global clear_point;
-    global mess_start;
-    global mess_stopp; 
-
-    mess_start.enable = "on";
-    mess_stopp.enable = "off";
+function setStop() 
+    global mess_stopp;
+    global stop;
+    stop = 1;
+    disp("Messung gestoppt.");
+    //ausgänge auf 0 setzen
+    call("cao", 2.5, 1, "r", 2.5 , 2, "r", "out", [1,1], 3, "i");
+    disp("Messung gestoppt 2");
     clear_point.enable = "on";
     abtastrate_input.enable = "on";
     dauer_input.enable = "on";
     add_button.enable = "on";
+    mess_start.enable = "on";
+    mess_stopp.enable = "off";
     
     
-    global stop;
-    stop = 1;
-    //ausgänge auf 0 setzen
-    call("cao", 0, 0, "i", 1, "r");
-    call("cao", 1, 0, "i", 1, "r");
 endfunction
 
 function setOutputFunction(sec)
@@ -665,10 +674,71 @@ function setOutputFunction(sec)
     mprintf("t = %.2f s | AO1 = %.2f V | AO2 = %.2f V\n", sec, output_A1, output_A2);
     
     disp(output_A2);
+    
     err= call("cao", (output_A1+10)/4, 1, "r", (output_A2+10)/4, 2, "r", "out", [1,1], 3, "i");
     if err <> 0 then
         disp("Fehler beim Setzen von AO1: Fehlercode " + string(err));
     end
     
 endfunction
+
+function initializeButtons()
+    // Überprüfen und Erstellen der Buttons
+    global mess_start add_button rem_point rep_point clear_point mess_stopp;
+
+    // Initialize "Messung starten" Button
+    mess_start = findobj("tag", "mess_start");
+    if isempty(mess_start) then
+        mess_start = uicontrol(f, "style", "pushbutton", "string", "Messung starten", "position", [20 640 130 30], "callback", "startProcess()", "enable", "on", "tag", "mess_start");
+    else
+        mess_start.string = "Messung starten";  // Setze den Text des Buttons zurück
+        mess_start.enable = "on";  // Stelle sicher, dass der Button aktiv ist
+    end
+
+    // Initialize "Messung stoppen" Button
+    mess_stopp = findobj("tag", "mess_stopp");
+    if isempty(mess_stopp) then
+        mess_stopp = uicontrol(f, "style", "pushbutton", "string", "Messung stoppen", "position", [20 600 130 30], "callback", "setStop()", "callback_type", 12, "enable", "off", "tag", "mess_stopp");
+    else
+        mess_stopp.string = "Messung stoppen";  // Setze den Text des Buttons zurück
+        mess_stopp.enable = "off";  // Stelle sicher, dass der Button deaktiviert ist
+    end
+
+    // Initialize "Hinzufügen" Button
+    add_button = findobj("tag", "add_button");
+    if isempty(add_button) then
+        add_button = uicontrol(f, "style", "pushbutton", "string", "Hinzufügen", "position", [280 750 100 30], "callback", "add_checkpoint()", "enable", "on", "tag", "add_button");
+    else
+        add_button.string = "Hinzufügen";  // Setze den Text des Buttons zurück
+        add_button.enable = "on";  // Stelle sicher, dass der Button aktiv ist
+    end
+
+    // Initialize "Entfernen" Button
+    rem_point = findobj("tag", "rem_point");
+    if isempty(rem_point) then
+        rem_point = uicontrol(f, "style", "pushbutton", "string", "Entfernen", "position", [280 710 100 30], "callback", "remove_checkpoint()", "enable", "off", "tag", "rem_point");
+    else
+        rem_point.string = "Entfernen";  // Setze den Text des Buttons zurück
+        rem_point.enable = "off";  // Stelle sicher, dass der Button deaktiviert ist
+    end
+
+    // Initialize "Ersetzen" Button
+    rep_point = findobj("tag", "rep_point");
+    if isempty(rep_point) then
+        rep_point = uicontrol(f, "style", "pushbutton", "string", "Ersetzen", "position", [280 670 100 30], "callback", "replace_checkpoint()", "enable", "off", "tag", "rep_point");
+    else
+        rep_point.string = "Ersetzen";  // Setze den Text des Buttons zurück
+        rep_point.enable = "off";  // Stelle sicher, dass der Button deaktiviert ist
+    end
+
+    // Initialize "Clear" Button
+    clear_point = findobj("tag", "clear_point");
+    if isempty(clear_point) then
+        clear_point = uicontrol(f, "style", "pushbutton", "string", "Clear", "position", [280 630 100 30], "callback", "clear_checkpoint()", "enable", "on", "tag", "clear_point");
+    else
+        clear_point.string = "Clear";  // Setze den Text des Buttons zurück
+        clear_point.enable = "on";  // Stelle sicher, dass der Button aktiv ist
+    end
+endfunction
+
 
