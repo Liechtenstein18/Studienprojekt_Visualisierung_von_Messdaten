@@ -4,7 +4,7 @@
 ilib_for_link(["cab", "cao"], "mile12.c", [], "c");
 exec('loader.sce');
 
-disp("analog outputs auf 0 setzen");
+
 call("cao", 2.5, 1, "r", 2.5 , 2, "r", "out", [1,1], 3, "i");
 
 
@@ -73,7 +73,7 @@ function startProcess()
     //------------------------------------------------------------------
     while (getdate("s") - t0) <= anzeigen_dauer
 
-        if stop then disp("Messung gestoppt."); break; end
+        if stop then ; break; end
 
         now = getdate("s");
         sec = now - t0;
@@ -84,7 +84,6 @@ function startProcess()
         elseif ~ao_off then
             call("cao", 2.5,1,"r", 2.5,2,"r", "out", [1,1], 3,"i");
             ao_off = %t;
-            disp("AO1/AO2 nach Messende auf 0 V gesetzt.");
         end
 
         // 5b  vier Eingänge lesen
@@ -109,7 +108,6 @@ function startProcess()
     //------------------------------------------------------------------
     //-- 6  Aufräumen
     //------------------------------------------------------------------
-    disp("analog outputs auf 0 setzen");
     call("cao",2.5,1,"r",2.5,2,"r","out",[1,1],3,"i");
 
     sec = 1;
@@ -138,8 +136,6 @@ endfunction
 function export()
     // --- Handles der Kurven aus der Haupt-GUI ------------------------
     global e1 e2 e3 e4;
-    
-    
 
     // 1 neues Fenster + Achse
     expFig = figure("backgroundcolor", [1 1 1], "position", [200 100 1000 700]);   //  <-- größer!
@@ -179,12 +175,21 @@ function export()
                       max(x_all) , max(y_all)];
 
     // 4 Beschriftungen, Titel, Legende
-    xlabel("Zeit (s)");
-    ylabel("Spannung (V)");
-    title("Exportierter Spannungsverlauf");
-    legend(["Kanal 1","Kanal 2","Kanal 3","Kanal 4"], "location", "upper right");
+    // 3  Achsenbegrenzungen:   x = min…max   |   y immer 0…12        ⚑
+    x_all = [e1.data(:,1) ; e2.data(:,1) ; e3.data(:,1) ; e4.data(:,1)];
+    if isempty(x_all) then                // falls keine Daten gezeichnet
+        x_all = [0 ; 1];                  // Dummy-Bereich verhindern Fehler
+    end
 
-    disp("Spannungsverlauf erfolgreich exportiert.");
+    x_min = min(x_all);
+    x_max = max(x_all);
+    if x_min == x_max then                // Messdauer evtl. nur ein Punkt
+        x_max = x_max + 1;                // kleine Breite erzwingen
+    end
+
+ax.data_bounds = [x_min , 0 ;         // y-Minimum fest
+                  x_max , 12];        // y-Maximum fest  ⚑
+
 endfunction
 
 
@@ -201,7 +206,7 @@ global dauer_input abtastrate_input dauer_val abtastrate;
 global t_input a1_input a2_input;
 global t_box a1_box a2_box;
 global display_extra;
-display_extra = 5;
+display_extra = 0;
 
 // --- Beschriftungen & Eingaben oben ---
 
@@ -224,7 +229,7 @@ abtastrate_input = uicontrol(f, "style", "edit", "string", "10", "position", [82
 //abtastrate = 1 / evstr(abtastrate_input.string); // umformen der Abtastrate in 1/s
 
 
-uicontrol(f, "style", "text", "string", " 1/s", "position", [127 745 20 20], "backgroundcolor", [0.9 0.9 0.9]), "fontsize", 12;
+uicontrol(f, "style", "text", "string", " 1/s", "position", [127 745 25 20], "backgroundcolor", [0.9 0.9 0.9], "fontsize", 12);
 //checkboxes für das auswählen der plots
 uicontrol(f, "style", "frame", "position", [12 725 148 1], "backgroundcolor", [0.0 0.0 0.0], "tag", "parameter_frame");
 uicontrol(f, "style", "text", "string", "Kanäle", "position", [20 717 35 20], "backgroundcolor", [0.9 0.9 0.9], "horizontalalignment", "left", "fontsize", 12);
@@ -367,8 +372,6 @@ e6.thickness = 2;
 
 //gca().title.text = "Eingabe Funktion";
 gca().data_bounds = [0, minVoltageDisplay; timeBuffer+ display_extra, maxVoltageDisplay];
-
-disp("war hier");
 initializeButtons();
 
 // --- Funktion zum Hinzufügen eines Checkpoints ---
@@ -382,6 +385,15 @@ function add_checkpoint()
     t_val  = max(0, evstr(t_input.string));             //  t ≥ 0
     a1_val = min(10, max(0, evstr(a1_input.string)));   //  0 … 10 V
     a2_val = min(10, max(0, evstr(a2_input.string)));   //  0 … 10 V
+
+    if isempty(dt) then             // noch nicht definiert?
+        rate = evstr(abtastrate_input.string);
+        if rate <= 0 then
+            messagebox("Bitte zuerst eine gültige Abtastrate eingeben.","Hinweis");
+            return
+        end
+        dt = 1 / rate;
+    end
 
     // Schrittweite erzwingen
     if modulo(t_val, dt) <> 0 then
@@ -558,8 +570,6 @@ function updateInputFunction()
 
     // Neue Dauer auslesen
     neue_dauer = evstr(dauer_input.string);
-    disp(neue_dauer);
-    disp("High Ground");
     
     // Zweite Achse aktivieren
     f = gcf();
@@ -730,10 +740,8 @@ function setStop()
     global stop;
     global input_function_dropdown;
     stop = 1;
-    disp("Messung gestoppt.");
     //ausgänge auf 0 setzen
     call("cao", 2.5, 1, "r", 2.5 , 2, "r", "out", [1,1], 3, "i");
-    disp("Messung gestoppt 2");
     clear_point.enable = "on";
     abtastrate_input.enable = "on";
     dauer_input.enable = "on";
@@ -848,7 +856,6 @@ function initializeButtons()
     input_function_dropdown = findobj("tag", "input_function_dropdown");
     if isempty(input_function_dropdown) then
         input_function_dropdown = uicontrol(f, "style", "popupmenu", "string", ["manuelle Eingabe"; "Funktion A"; "Funktion B"], "position", [180 640 200 30], "callback", "load_preset_function()", "tag", "input_function_dropdown", "value", 1, "fontsize", 12, "enable", "on");
-        disp("Dropdown-Menü für Eingabefunktion erstellt.");
     end
 
     // Initialize Export Button
@@ -874,7 +881,6 @@ function load_preset_function()
 
     select selected_idx
         case 1  // Manuelle Eingabe
-            disp("Manuelle Eingabe ausgewählt.");
             t_list = [];
             a1_list = [];
             a2_list = [];
@@ -889,15 +895,12 @@ function load_preset_function()
             a1_list = [0; 10; 0];
             a2_list = [0; 0; 0];
             neue_dauer = 80;
-            disp("Funktion A geladen.");
         case 3  // Funktion B
             t_list = [0; 10; 80; 150];
             a1_list = [0; 5; 7; 0];
             a2_list = [0; 0; 0; 0];
             neue_dauer = 160;
-            disp("Funktion B geladen.");
         else
-            disp("Keine gültige Auswahl.");
             return;
     end
 
